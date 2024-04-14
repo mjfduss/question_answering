@@ -12,3 +12,5 @@ uvicorn
 sse-starlette
 boto3
 langchain
+requests
+beautifulsoup4

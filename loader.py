@@ -1,5 +1,4 @@
 import os
-import requests
 from dotenv import load_dotenv
 from langchain.graphs import Neo4jGraph
 import streamlit as st
@@ -20,8 +19,6 @@ os.environ["NEO4J_URL"] = url
 
 logger = get_logger(__name__)
 
-ir_book_base_url = "https://nlp.stanford.edu/IR-book/html/htmledition/irbook.html"
-
 embeddings, dimension = load_embedding_model(
     embedding_model_name, config={"ollama_base_url": ollama_base_url}, logger=logger
 )
@@ -30,7 +27,6 @@ neo4j_graph = Neo4jGraph(url=url, username=username, password=password)
 
 create_constraints(neo4j_graph)
 create_vector_index(neo4j_graph, dimension)
-
 
 def load_so_data(tag: str = "neo4j", page: int = 1) -> None:
     parameters = (
