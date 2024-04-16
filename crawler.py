@@ -1,4 +1,4 @@
-import re
+import uuid
 import requests
 from bs4 import BeautifulSoup
 
@@ -37,17 +37,17 @@ def find_child_pages(page):
 def process_page(url):
     page = requests.get(url)
     soup = BeautifulSoup(page.content, "html.parser")
-    title = soup.title.string
-    text = soup.get_text()
 
     return {
-            'title': title,
-            'text': text,
+            'id': uuid.uuid4(),
+            'link': url,
+            'title': soup.title.string,
+            'text': soup.get_text(),
             'children': find_child_pages(page)
         }
 
 
-def main():
+def crawl_textbook():
 
     ir_book_base_url = "https://nlp.stanford.edu/IR-book/html/htmledition/"
 
@@ -67,6 +67,12 @@ def main():
             if link.get('href') == 'bibliography-1.html':
                 break
             content_links.append(link)
-    pages = list(map(process_page, map(lambda link: ir_book_base_url + link.get('href'), content_links)))
 
-main() 
+    pages = list(
+        map(
+            process_page, 
+            map(
+                lambda link: ir_book_base_url + link.get('href'), 
+                content_links)))
+    
+    return pages
