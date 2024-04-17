@@ -39,7 +39,7 @@ def process_page(url):
     soup = BeautifulSoup(page.content, "html.parser")
 
     return {
-            'id': uuid.uuid4(),
+            'id': str(uuid.uuid4()),
             'link': url,
             'title': soup.title.string,
             'text': soup.get_text(),

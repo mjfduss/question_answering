@@ -14,3 +14,4 @@ boto3
 langchain
 requests
 beautifulsoup4
+langchain-community

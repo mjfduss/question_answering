@@ -1,7 +1,7 @@
 import os
 from typing import List
 from dotenv import load_dotenv
-from langchain.graphs import Neo4jGraph
+from langchain_community.graphs import Neo4jGraph
 import streamlit as st
 from streamlit.logger import get_logger
 from chains import load_embedding_model
@@ -50,11 +50,18 @@ def insert_textbook_data(pages: List[dict]) -> None:
     ON CREATE SET page.title = p.title, page.link = p.link, 
         page.text = p.text, page.embedding = p.embedding, 
         page.child_embedding = p.child_embedding
-    FOREACH (c IN p.children |
-        MERGE (page)-[:SUBSECTION]->(page:Page {title:c})
-    )
     """
     neo4j_graph.query(import_query, {"pages": pages})
+
+    subpage_query = """
+    UNWIND $pages AS p
+    MATCH (page:Page{id:p.id})
+    FOREACH (c in p.children |
+        MATCH (child:Page{title:c})
+        MERGE (page)-[:SUBPAGE]->(child)
+    )
+    """
+    neo4j_graph.query(subpage_query, {"pages": pages})
 
 
 # Streamlit

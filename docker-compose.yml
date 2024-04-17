@@ -2,20 +2,20 @@ services:
 
   llm: &llm
     image: ollama/ollama:latest
-    profiles: ["linux"]
+    profiles: [ "linux" ]
     networks:
       - net
 
   llm-gpu:
     <<: *llm
-    profiles: ["linux-gpu"]
+    profiles: [ "linux-gpu" ]
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
               count: all
-              capabilities: [gpu]
+              capabilities: [ gpu ]
 
   pull-model:
     image: genai-stack/pull-model:latest
@@ -41,13 +41,28 @@ services:
       - NEO4J_PLUGINS=["apoc"]
       - NEO4J_db_tx__log_rotation_retention__policy=false
     healthcheck:
-        test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1"]
-        interval: 5s
-        timeout: 3s
-        retries: 5
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1"
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     networks:
       - net
-  
+
+  coder:
+    image: codercom/code-server:latest
+    ports:
+      - 8080:8080
+    volumes:
+      - $HOME/.config:/home/coder/.config
+      - $PWD:/home/coder/project
+    environment:
+      - DOCKER_USER=$USER
+    user: ${UID}:${GID}
+
   loader:
     build:
       context: .
@@ -73,13 +88,10 @@ services:
           path: .
           ignore:
             - bot.py
-            - pdf_bot.py
-            - api.py
-            - front-end/
     ports:
       - 8081:8080
       - 8502:8502
-  
+
   bot:
     build:
       context: .

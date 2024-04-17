@@ -15,6 +15,7 @@ RUN pip install --upgrade -r requirements.txt
 COPY loader.py .
 COPY utils.py .
 COPY chains.py .
+COPY crawler.py .
 COPY images ./images
 
 EXPOSE 8502
