@@ -1,3 +1,6 @@
+"""
+Modified from https://github.com/docker/genai-stack/blob/main/loader.py
+"""
 import os
 from typing import List
 from dotenv import load_dotenv
@@ -39,7 +42,7 @@ def insert_textbook_data(pages: List[dict]) -> None:
     # Calculate embedding values for textbook text
     for page in pages:
         page['embedding'] = embeddings.embed_query(page['text'])
-        page['child_embedding'] = embeddings.embed_documents([page['title']] + page['children'])
+        #page['child_embedding'] = embeddings.embed_documents([page['title']] + page['children'])
 
     # Cypher, the query language of Neo4j, is used to import the data
     # https://neo4j.com/docs/getting-started/cypher-intro/
@@ -48,8 +51,7 @@ def insert_textbook_data(pages: List[dict]) -> None:
     UNWIND $pages AS p
     MERGE (page:Page {id:p.id})
     ON CREATE SET page.title = p.title, page.link = p.link, 
-        page.text = p.text, page.embedding = p.embedding, 
-        page.child_embedding = p.child_embedding
+        page.text = p.text, page.embedding = p.embedding
     """
     neo4j_graph.query(import_query, {"pages": pages})
 
