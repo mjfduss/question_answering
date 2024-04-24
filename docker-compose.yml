@@ -23,7 +23,7 @@ services:
       context: .
       dockerfile: pull_model.Dockerfile
     environment:
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL-http://host.docker.internal:11434}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL-http://llm-gpu:11434}
       - LLM=${LLM-llama2}
     networks:
       - net
@@ -63,10 +63,10 @@ services:
       - DOCKER_USER=$USER
     user: ${UID}:${GID}
 
-  loader:
+  knowledgegraph:
     build:
       context: .
-      dockerfile: loader.Dockerfile
+      dockerfile: knowledgegraph.Dockerfile
     volumes:
       - $PWD/embedding_model:/embedding_model
     environment:
@@ -117,7 +117,7 @@ services:
         - action: rebuild
           path: .
           ignore:
-            - loader.py
+            - knowledgegraph.py
             - pdf_bot.py
             - api.py
             - front-end/
