@@ -1,12 +1,29 @@
+import os
 import uuid
 import requests
 from bs4 import BeautifulSoup
 
-def find_child_pages(page):
-    child_link_start = page.text.find("<!--Table of Child-Links-->")
+OUT_FOLDER = "textbook/"
+
+def download_single_page(base_url: str, html_file: str):
+    page = requests.get(base_url + html_file)
+    with open(OUT_FOLDER + html_file, 'wb') as file:
+        file.write(page.content)
+
+def get_page(base_url: str, html_file: str) -> str:
+    
+    if not os.path.isfile(OUT_FOLDER + html_file):
+        download_single_page(base_url, html_file)
+
+    with open(OUT_FOLDER + html_file, 'r') as file:
+        return file.read()
+
+
+def find_child_pages(page: str):
+    child_link_start = page.find("<!--Table of Child-Links-->")
     if child_link_start != -1:
-        child_link_end = page.text.find("<!--End of Table of Child-Links-->")
-        sub_page = page.text[child_link_start:child_link_end]
+        child_link_end = page.find("<!--End of Table of Child-Links-->")
+        sub_page = page[child_link_start:child_link_end]
         sub_page = sub_page.strip()
         ul_start = sub_page.find("<UL>") + 4
         ul_end = sub_page.find("</UL>", len(sub_page) - 5)
@@ -34,15 +51,17 @@ def find_child_pages(page):
     else:
         return []
 
-def process_page(url):
-    page = requests.get(url)
-    soup = BeautifulSoup(page.content, "html.parser")
+def process_page(arguments):
+    base_url, html_name = arguments
+    
+    page = get_page(base_url, html_name)
+    soup = BeautifulSoup(page, "html.parser")
 
     return {
             'id': str(uuid.uuid4()),
-            'link': url,
+            'link': base_url + html_name,
             'title': soup.title.string,
-            'text': soup.get_text(),
+            'text': soup.get_text(strip=True),
             'children': find_child_pages(page)
         }
 
@@ -51,9 +70,12 @@ def crawl_textbook():
 
     ir_book_base_url = "https://nlp.stanford.edu/IR-book/html/htmledition/"
 
-    page = requests.get(ir_book_base_url + 'contents-1.html')
+    if not os.path.isdir(OUT_FOLDER):
+        os.makedirs(OUT_FOLDER)
 
-    soup = BeautifulSoup(page.content, "html.parser")
+    contents_page = requests.get(ir_book_base_url + 'contents-1.html')
+
+    soup = BeautifulSoup(contents_page.content, "html.parser")
     links = soup.find_all('a')
     content_links = []
     first_link_found = False
@@ -67,12 +89,13 @@ def crawl_textbook():
             if link.get('href') == 'bibliography-1.html':
                 break
             content_links.append(link)
-
+    print("Crawling HTML Textbook Page Links")
+    
     pages = list(
         map(
             process_page, 
             map(
-                lambda link: ir_book_base_url + link.get('href'), 
+                lambda link: (ir_book_base_url, link.get('href')), 
                 content_links)))
     
     return pages

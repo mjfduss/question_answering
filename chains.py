@@ -16,87 +16,42 @@ from typing import List, Any
 from utils import BaseLogger
 
 
-def load_embedding_model(embedding_model_name: str, logger=BaseLogger(), config={}):
-    if embedding_model_name == "ollama":
-        embeddings = OllamaEmbeddings(
-            base_url=config["ollama_base_url"], model="llama2"
-        )
-        dimension = 4096
-        logger.info("Embedding: Using Ollama")
-    else:
-        embeddings = SentenceTransformerEmbeddings(
-            model_name="all-MiniLM-L6-v2", cache_folder="/embedding_model"
-        )
-        dimension = 384
-        logger.info("Embedding: Using SentenceTransformer")
+def load_embedding_model():
+    embeddings = SentenceTransformerEmbeddings(
+        model_name="all-MiniLM-L6-v2", cache_folder="/embedding_model"
+    )
+    dimension = 384
     return embeddings, dimension
 
 
-def load_llm(llm_name: str, logger=BaseLogger(), config={}):
-    if llm_name == "claudev2":
-        logger.info("LLM: ClaudeV2")
-        return BedrockChat(
-            model_id="anthropic.claude-v2",
-            model_kwargs={"temperature": 0.0, "max_tokens_to_sample": 1024},
-            streaming=True,
-        )
-    elif len(llm_name):
-        logger.info(f"LLM: Using Ollama: {llm_name}")
-        return ChatOllama(
-            temperature=0,
-            base_url=config["ollama_base_url"],
-            model=llm_name,
-            streaming=True,
-            # seed=2,
-            top_k=10,  # A higher value (100) will give more diverse answers, while a lower value (10) will be more conservative.
-            top_p=0.3,  # Higher value (0.95) will lead to more diverse text, while a lower value (0.5) will generate more focused text.
-            num_ctx=3072,  # Sets the size of the context window used to generate the next token.
-        )
-
-
-def configure_llm_only_chain(llm):
-    # LLM only response
-    template = """
-    You are a helpful assistant that helps a support agent with answering programming questions.
-    If you don't know the answer, just say that you don't know, you must not make up an answer.
-    """
-    system_message_prompt = SystemMessagePromptTemplate.from_template(template)
-    human_template = "{question}"
-    human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
-    chat_prompt = ChatPromptTemplate.from_messages(
-        [system_message_prompt, human_message_prompt]
+def load_llm():
+    return ChatOllama(
+        temperature=0,
+        base_url="http://localhost:11434/",
+        model="llama2",
+        streaming=True,
+        # seed=2,
+        top_k=10,  # A higher value (100) will give more diverse answers, while a lower value (10) will be more conservative.
+        top_p=0.3,  # Higher value (0.95) will lead to more diverse text, while a lower value (0.5) will generate more focused text.
+        num_ctx=3072,  # Sets the size of the context window used to generate the next token.
     )
 
-    def generate_llm_output(
-        user_input: str, callbacks: List[Any], prompt=chat_prompt
-    ) -> str:
-        chain = prompt | llm
-        answer = chain.invoke(
-            {"question": user_input}, config={"callbacks": callbacks}
-        ).content
-        return {"answer": answer}
-
-    return generate_llm_output
-
-
-def configure_qa_rag_chain(llm, embeddings, embeddings_store_url, username, password):
-    # RAG response
+def configure_qa_kg_chain(llm, embeddings, neo4jurl="neo4j://localhost:7687", username="neo4j", password="password"):
+    # Response
     general_system_template = """ 
-    Use the following pieces of context to answer the question at the end.
-    The context contains question-answer pairs and their links from Stackoverflow.
-    You should prefer information from accepted or more upvoted answers.
-    Make sure to rely on information from the answers and not on questions to provide accurate responses.
-    When you find particular answer in the context useful, make sure to cite it in the answer using the link.
+    Use the following pieces of context to answer question at the end.
+    The context contains pages and their links from the Introduction to Information Retrieval textbook.
+    When you find a particular segment of text in in the context useful, make sure to cite it in the answer using the page link.
     If you don't know the answer, just say that you don't know, don't try to make up an answer.
     ----
     {summaries}
     ----
     Each answer you generate should contain a section at the end of links to 
-    Stackoverflow questions and answers you found useful, which are described under Source value.
-    You can only use links to StackOverflow questions that are present in the context and always
+    the textbook pages you found useful, which are described under Source value.
+    You can only use links to the pages that are present in the context and always
     add links to the end of the answer in the style of citations.
     Generate concise answers with references sources section of links to 
-    relevant StackOverflow questions only at the end of the answer.
+    relevant page text only at the end of the answer.
     """
     general_user_template = "Question:```{question}```"
     messages = [
@@ -114,27 +69,22 @@ def configure_qa_rag_chain(llm, embeddings, embeddings_store_url, username, pass
     # Vector + Knowledge Graph response
     kg = Neo4jVector.from_existing_index(
         embedding=embeddings,
-        url=embeddings_store_url,
+        url=neo4jurl,
         username=username,
         password=password,
         database="neo4j",  # neo4j by default
-        index_name="stackoverflow",  # vector by default
-        text_node_property="body",  # text by default
+        index_name="page_embeddings",  # vector by default
+        text_node_property="text",  # text by default
         retrieval_query="""
-    WITH node AS question, score AS similarity
-    CALL  { with question
-        MATCH (question)<-[:ANSWERS]-(answer)
-        WITH answer
-        ORDER BY answer.is_accepted DESC, answer.score DESC
-        WITH collect(answer)[..2] as answers
-        RETURN reduce(str='', answer IN answers | str + 
-                '\n### Answer (Accepted: '+ answer.is_accepted +
-                ' Score: ' + answer.score+ '): '+  answer.body + '\n') as answerTexts
-    } 
-    RETURN '##Question: ' + question.title + '\n' + question.body + '\n' 
-        + answerTexts AS text, similarity as score, {source: question.link} AS metadata
-    ORDER BY similarity ASC // so that best answers are the last
-    """,
+        WITH node AS page
+        CALL { with page
+            MATCH (page)<-[:SUB_PAGE]-(child)
+            WITH child
+            WITH collect(child) as children
+            RETURN reduce(str='', child in children | str + '\n### Subpage:' + child.title + '\n' + child.text + '\n') as childrenText
+        }
+        RETURN '##Page: ' + page.title + '\n' + page.text + childrenText AS children
+        """
     )
 
     kg_qa = RetrievalQAWithSourcesChain(
