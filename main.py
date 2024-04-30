@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from langchain_community.graphs import Neo4jGraph
+from fastapi.staticfiles import StaticFiles
 
 import knowledgegraph
 import bot
@@ -20,7 +20,4 @@ app.add_middleware(
 )
 
 app.include_router(bot.router)
-
-@app.get("/")
-async def root():
-    return "The root api for the Knowledge Graph Bot"
+app.mount("/", StaticFiles(directory="static",html = True), name="static")
