@@ -27,8 +27,6 @@ def load_embedding_model():
 def load_llm():
     return ChatOllama(
         temperature=0,
-        base_url="http://localhost:11434/",
-        model="llama2",
         streaming=True,
         # seed=2,
         top_k=10,  # A higher value (100) will give more diverse answers, while a lower value (10) will be more conservative.
@@ -72,18 +70,18 @@ def configure_qa_kg_chain(llm, embeddings, neo4jurl="neo4j://localhost:7687", us
         url=neo4jurl,
         username=username,
         password=password,
-        database="neo4j",  # neo4j by default
-        index_name="page_embeddings",  # vector by default
-        text_node_property="text",  # text by default
+        database="neo4j",
+        index_name="page_embeddings",
+        text_node_property="text",
         retrieval_query="""
-        WITH node AS page
+        WITH node AS page, score AS similarity
         CALL { with page
             MATCH (page)<-[:SUB_PAGE]-(child)
             WITH child
             WITH collect(child) as children
             RETURN reduce(str='', child in children | str + '\n### Subpage:' + child.title + '\n' + child.text + '\n') as childrenText
         }
-        RETURN '##Page: ' + page.title + '\n' + page.text + childrenText AS children
+        RETURN '##Page: ' + page.title + '\n' + page.text + childrenText AS text, similarity as score, {source: page.link} AS metadata
         """
     )
 
