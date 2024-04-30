@@ -1,49 +1,21 @@
 """
 Modified from https://github.com/docker/genai-stack/blob/main/loader.py
 """
-import os
 from typing import List
-from dotenv import load_dotenv
 from langchain_community.graphs import Neo4jGraph
-import streamlit as st
-from streamlit.logger import get_logger
 from chains import load_embedding_model
 from utils import create_vector_index
-from PIL import Image
-
 from crawler import crawl_textbook
 
-load_dotenv(".env")
 
-url = os.getenv("NEO4J_URI")
-username = os.getenv("NEO4J_USERNAME")
-password = os.getenv("NEO4J_PASSWORD")
-ollama_base_url = os.getenv("OLLAMA_BASE_URL")
-embedding_model_name = os.getenv("EMBEDDING_MODEL")
-# Remapping for Langchain Neo4j integration
-os.environ["NEO4J_URL"] = url
-
-logger = get_logger(__name__)
-
-embeddings, dimension = load_embedding_model(
-    embedding_model_name, config={"ollama_base_url": ollama_base_url}, logger=logger
-)
-
-neo4j_graph = Neo4jGraph(url=url, username=username, password=password)
-
-create_vector_index(neo4j_graph, dimension)
-
-def load_textbook_data() -> None:
-    pages = crawl_textbook()
-    insert_textbook_data(pages)
-
-
-def insert_textbook_data(pages: List[dict]) -> None:
+def insert_textbook_data(pages: List[dict], embeddings, neo4j_graph: Neo4jGraph) -> None:
     # Calculate embedding values for textbook text
+    print("Building Page Embeddings")
     for page in pages:
         page['embedding'] = embeddings.embed_query(page['text'])
         #page['child_embedding'] = embeddings.embed_documents([page['title']] + page['children'])
-
+    
+    print("Building Knowledge Graph")
     # Cypher, the query language of Neo4j, is used to import the data
     # https://neo4j.com/docs/getting-started/cypher-intro/
     # https://neo4j.com/docs/cypher-cheat-sheet/5/auradb-enterprise/
@@ -55,33 +27,52 @@ def insert_textbook_data(pages: List[dict]) -> None:
     """
     neo4j_graph.query(import_query, {"pages": pages})
 
+    
     subpage_query = """
     UNWIND $pages AS p
     MATCH (page:Page{id:p.id})
-    FOREACH (c in p.children |
-        MATCH (child:Page{title:c})
-        MERGE (page)-[:SUBPAGE]->(child)
-    )
+    UNWIND p.children AS c
+    MATCH (child:Page{title:c})
+    MERGE (child)-[:SUB_PAGE]->(page)
     """
     neo4j_graph.query(subpage_query, {"pages": pages})
 
 
-# Streamlit
-def render_page():
-    datamodel_image = Image.open("./images/datamodel.png")
-    st.header("IR Textbook Loader")
-    st.caption("Go to http://localhost:7474/ to explore the graph.")
-
-    if st.button("Import", type="primary"):
-        with st.spinner("Loading... This might take a minute or two."):
-            try:
-                load_textbook_data()
-                st.success("Import successful", icon="✅")
-                st.caption("Data model")
-                st.image(datamodel_image)
-                st.caption("Go to http://localhost:7474/ to interact with the database")
-            except Exception as e:
-                st.error(f"Error: {e}", icon="🚨")
+def load_textbook_data(embeddings, neo4j: Neo4jGraph) -> None:
+    pages = crawl_textbook()
+    print("Pages crawled")
+    insert_textbook_data(pages, embeddings, neo4j)
 
 
-render_page()
+def build_knowledge_graph(neo4j_graph: Neo4jGraph):
+    """Builds the Knowledge Graph in Neo4j if it doesn't already exist"""
+    # Checking if Graph is empty
+    count_query = """
+    MATCH (p:Page)
+    RETURN COUNT(p)
+    """
+    results = neo4j_graph.query(count_query)
+    node_count = list(results[0].values())[0]
+
+    # If graph is empty, create knowledge graph
+    if not node_count > 0:
+        
+        print("Loading Embedding Model")
+        embeddings, dimension = load_embedding_model()
+        create_vector_index(neo4j_graph, dimension)
+
+        try:
+            load_textbook_data(embeddings, neo4j_graph)
+            return True
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
+    # If graph is not empty, do nothing
+    return True
+
+def setup():
+    print("Connecting to Neo4j Graph")
+    neo4j_graph = Neo4jGraph(url="neo4j://localhost:7687", username="neo4j", password="password")
+
+    knowledge_graph_built = build_knowledge_graph(neo4j_graph)
+    print("knowledge_graph_built:", knowledge_graph_built)

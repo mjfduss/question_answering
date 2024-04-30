@@ -5,12 +5,7 @@ class BaseLogger:
 
 def create_vector_index(driver, dimension: int) -> None:
     index_query = """
-    CREATE VECTOR INDEX page-embeddings
-    FOR (p:Page) ON (p.embedding)
-    OPTIONS {indexConfig: {
-        vector.dimensions: $dimension,
-        vector.similarity_function: 'cosine'
-    }}
+    CALL db.index.vector.createNodeIndex('page_embeddings', 'Page', 'embedding', $dimension, 'cosine')
     """
     try:
         driver.query(index_query, {"dimension": dimension})
