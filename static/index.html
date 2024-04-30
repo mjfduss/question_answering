@@ -12,23 +12,26 @@
   <link rel="icon" type="image/png" href="images/favicon.png">
 </head>
 <body>
-
-  <!-- Primary Page Layout
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
   <div class="container">
     <div class="row">
       <div class="one-half column" style="margin-top: 25%">
-        <h4>Chat</h4>
-        <form>
+        <h4>Student</h4>
+        <form action="javascript:void(0);">
           <label for="question">Ask a Question</label>
           <textarea class="u-full-width" placeholder="What is information retrieval?" id="question"></textarea>
-          <input class="button-primary" type="submit" value="Submit">
+          <input class="button-primary" type="submit" id="submit" value="Submit">
         </form>
+      </div>
+      <div class="one-half column" style="margin-top: 25%">
+        <h4>Bot</h4>
+        <div id="loading" style="display:none;">
+          <p>Looking that up for you...</p>
+          <img id="loading-image" src="images/book.gif" alt="Loading..." />
+        </div> 
+        <pre id="response" style="display:none;"></pre>
       </div>
     </div>
   </div>
-
-<!-- End Document
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <script src="js/chat.js"></script>
 </body>
 </html>
