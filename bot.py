@@ -11,11 +11,15 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
+import knowledgegraph
 from chains import (
     load_embedding_model,
     load_llm,
     configure_qa_kg_chain
 )
+
+knowledgegraph.setup()
+
 
 class QueueCallback(BaseCallbackHandler):
     """Callback handler for streaming LLM responses to a queue."""
@@ -29,8 +33,10 @@ class QueueCallback(BaseCallbackHandler):
     def on_llm_end(self, *args, **kwargs) -> None:
         return self.q.empty()
 
+
 class Question(BaseModel):
     text: str
+
 
 def stream(cb, q) -> Generator:
     job_done = object()
@@ -55,14 +61,15 @@ def stream(cb, q) -> Generator:
         except Empty:
             continue
 
-router = APIRouter()
 
+router = APIRouter()
 
 
 embeddings, _ = load_embedding_model()
 
 llm = load_llm()
 kg_chain = configure_qa_kg_chain(llm, embeddings)
+
 
 @router.get("/query-stream")
 def qstream(question: Question = Depends()):

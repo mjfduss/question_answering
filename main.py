@@ -1,12 +1,7 @@
+import bot
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-
-import knowledgegraph
-import bot
-
-
-knowledgegraph.setup()
 
 app = FastAPI()
 origins = ["*"]
@@ -20,4 +15,4 @@ app.add_middleware(
 )
 
 app.include_router(bot.router)
-app.mount("/", StaticFiles(directory="static",html = True), name="static")
+app.mount("/", StaticFiles(directory="static", html=True), name="static")

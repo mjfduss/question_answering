@@ -29,10 +29,14 @@ def load_llm():
         temperature=0,
         streaming=True,
         # seed=2,
-        top_k=10,  # A higher value (100) will give more diverse answers, while a lower value (10) will be more conservative.
-        top_p=0.3,  # Higher value (0.95) will lead to more diverse text, while a lower value (0.5) will generate more focused text.
-        num_ctx=3072,  # Sets the size of the context window used to generate the next token.
+        # A higher value (100) will give more diverse answers, while a lower value (10) will be more conservative.
+        top_k=10,
+        # Higher value (0.95) will lead to more diverse text, while a lower value (0.5) will generate more focused text.
+        top_p=0.3,
+        # Sets the size of the context window used to generate the next token.
+        num_ctx=3072,
     )
+
 
 def configure_qa_kg_chain(llm, embeddings, neo4jurl="neo4j://localhost:7687", username="neo4j", password="password"):
     # Response
@@ -75,13 +79,7 @@ def configure_qa_kg_chain(llm, embeddings, neo4jurl="neo4j://localhost:7687", us
         text_node_property="text",
         retrieval_query="""
         WITH node AS page, score AS similarity
-        CALL { with page
-            MATCH (page)<-[:SUB_PAGE]-(child)
-            WITH child
-            WITH collect(child) as children
-            RETURN reduce(str='', child in children | str + '\n### Subpage:' + child.title + '\n' + child.text + '\n') as childrenText
-        }
-        RETURN '##Page: ' + page.title + '\n' + page.text + childrenText AS text, similarity as score, {source: page.link} AS metadata
+        RETURN '##Page: ' + page.title + '\n' + page.text AS text, similarity as score, {source: page.link} AS metadata
         """
     )
 
@@ -92,3 +90,12 @@ def configure_qa_kg_chain(llm, embeddings, neo4jurl="neo4j://localhost:7687", us
         max_tokens_limit=3375,
     )
     return kg_qa
+
+    """
+    CALL { with page
+            MATCH (page)<-[:SUB_PAGE]-(child)
+            WITH child
+            WITH collect(child) as children
+            RETURN reduce(str='', child in children | str + '\n### Subpage:' + child.title + '\n' + child.text + '\n') as childrenText
+        }
+    """

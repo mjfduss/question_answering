@@ -7,8 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const loadingDiv = document.querySelector("#loading");
 
     submitButton.addEventListener("click", () => {
-        console.log("Clicked!");
-        console.log(questionArea.value);
+
         // Encode the question
         const question = encodeURI(questionArea.value);
 
