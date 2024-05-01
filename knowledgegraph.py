@@ -1,14 +1,32 @@
 """
+Nathan Hartzler
+CSC790-SP24-Project
+
 Modified from https://github.com/docker/genai-stack/blob/main/loader.py
+and https://github.com/docker/genai-stack/blob/main/utils.py
 """
 from typing import List
 from langchain_community.graphs import Neo4jGraph
 from chains import load_embedding_model
-from utils import create_vector_index
 from crawler import crawl_textbook
 
 
+def create_vector_index(driver, dimension: int) -> None:
+    """Creates the vector index in the Neo4j database, if it doesn't already exist"""
+    index_query = """
+    CALL db.index.vector.createNodeIndex('page_embeddings', 'Page', 'embedding', $dimension, 'cosine')
+    """
+    try:
+        driver.query(index_query, {"dimension": dimension})
+    except:  # Already exists
+        pass
+
+
 def insert_textbook_data(pages: List[dict], embeddings, neo4j_graph: Neo4jGraph) -> None:
+    """Using the list of diction objects, it calls the Neo4j database to create a new
+        Page node for each page and then connects the child link pages as SubPages
+        so that the relationship between different topics in the textbook are maintained
+    """
     # Calculate embedding values for textbook text
     print("Building Page Embeddings")
     for page in pages:
@@ -38,6 +56,9 @@ def insert_textbook_data(pages: List[dict], embeddings, neo4j_graph: Neo4jGraph)
 
 
 def load_textbook_data(embeddings, neo4j: Neo4jGraph) -> None:
+    """Calls the html page crawler and parser then inserts the
+        pages into the database
+    """
     pages = crawl_textbook()
     print("Pages crawled")
     insert_textbook_data(pages, embeddings, neo4j)
@@ -71,6 +92,9 @@ def build_knowledge_graph(neo4j_graph: Neo4jGraph):
 
 
 def setup():
+    """Connects to the local Neo4j database and checks if the 
+        knowledge graph is built already
+    """
     print("Connecting to Neo4j Graph")
     neo4j_graph = Neo4jGraph(
         url="neo4j://localhost:7687", username="neo4j", password="password")

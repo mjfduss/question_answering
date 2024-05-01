@@ -1,4 +1,7 @@
 """
+Nathan Hartzler
+CSC790-SP24-Project
+
 Modified from https://github.com/docker/genai-stack/blob/main/bot.py
 and https://github.com/docker/genai-stack/blob/main/api.py
 """
@@ -18,6 +21,8 @@ from chains import (
     configure_qa_kg_chain
 )
 
+# Setup the Neo4j database connection
+# And build the knowledge graph if needed
 knowledgegraph.setup()
 
 
@@ -39,6 +44,9 @@ class Question(BaseModel):
 
 
 def stream(cb, q) -> Generator:
+    """Takes a callback function, cb, and a job queue, q, to
+        corrdinate the streaming LLM answers from multiple threads
+    """
     job_done = object()
 
     def task():
@@ -64,15 +72,20 @@ def stream(cb, q) -> Generator:
 
 router = APIRouter()
 
-
+# Get the embedding layer model
 embeddings, _ = load_embedding_model()
-
+# Get the llm loaded
 llm = load_llm()
+# Create the network connection between the knowledge graph
+# and the ollama LLM
 kg_chain = configure_qa_kg_chain(llm, embeddings)
 
 
 @router.get("/query-stream")
 def qstream(question: Question = Depends()):
+    """Recieves an http request to the /query-stream endpoint
+        and returns a text/event-stream media to the client
+    """
     output_function = kg_chain
 
     q = Queue()

@@ -1,3 +1,7 @@
+"""
+Nathan Hartzler
+CSC790-SP24-Project
+"""
 import os
 import uuid
 import requests
@@ -6,12 +10,18 @@ from bs4 import BeautifulSoup
 OUT_FOLDER = "textbook/"
 
 def download_single_page(base_url: str, html_file: str):
+    """Downloads the given html_file from the given base_url
+        and saves it to the OUT_FOLDER directory
+    """
     page = requests.get(base_url + html_file)
     with open(OUT_FOLDER + html_file, 'wb') as file:
         file.write(page.content)
 
 def get_page(base_url: str, html_file: str) -> str:
-    
+    """Checks if the html_file is in the OUT_FOLDER directory
+        Downloads it if it isn't, then returns a string
+        of the file's contents
+    """
     if not os.path.isfile(OUT_FOLDER + html_file):
         download_single_page(base_url, html_file)
 
@@ -20,6 +30,11 @@ def get_page(base_url: str, html_file: str) -> str:
 
 
 def find_child_pages(page: str):
+    """Parses through the html page and finds child links if they exist
+        It has to parse through the unconventional <UL> list that doesn't
+        have closing </LI> tags for its list items. Once parses, it returns
+        a list of the page titles as strings
+    """
     child_link_start = page.find("<!--Table of Child-Links-->")
     if child_link_start != -1:
         child_link_end = page.find("<!--End of Table of Child-Links-->")
@@ -52,6 +67,11 @@ def find_child_pages(page: str):
         return []
 
 def process_page(arguments):
+    """Given a base_url and html_name, this
+        gets a string of the pages contents, 
+        parses it using the Beautiful Soup library,
+        then builds a dictionary object for each html page
+    """
     base_url, html_name = arguments
     
     page = get_page(base_url, html_name)
@@ -67,7 +87,12 @@ def process_page(arguments):
 
 
 def crawl_textbook():
-
+    """If the html files from the ir_book_base_url have not been downloaded locally,
+        then this downloads the table of contents page from the website and parses it,
+        it then procedurally downloads each html page from the book and parses it
+        into a list of dictionary objects. If there is already a local store, then the 
+        local html files are used.
+    """
     ir_book_base_url = "https://nlp.stanford.edu/IR-book/html/htmledition/"
 
     if not os.path.isdir(OUT_FOLDER):

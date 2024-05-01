@@ -1,9 +1,13 @@
+"""
+Nathan Hartzler
+CSC790-SP24-Project
+
+Modified from https://github.com/docker/genai-stack/blob/main/chains.py
+"""
 from langchain_community.embeddings import (
-    OllamaEmbeddings,
     SentenceTransformerEmbeddings,
-    BedrockEmbeddings,
 )
-from langchain_community.chat_models import ChatOllama, BedrockChat
+from langchain_community.chat_models import ChatOllama
 from langchain.vectorstores.neo4j_vector import Neo4jVector
 from langchain.chains import RetrievalQAWithSourcesChain
 from langchain.chains.qa_with_sources import load_qa_with_sources_chain
@@ -12,11 +16,13 @@ from langchain.prompts.chat import (
     SystemMessagePromptTemplate,
     HumanMessagePromptTemplate,
 )
-from typing import List, Any
-from utils import BaseLogger
 
 
 def load_embedding_model():
+    """Returns the pretrained sentence text embedder model
+        Will download the model from HuggingFace if it is not already
+        cached in the local "embedding_model" folder
+    """
     embeddings = SentenceTransformerEmbeddings(
         model_name="all-MiniLM-L6-v2", cache_folder="embedding_model"
     )
@@ -25,6 +31,7 @@ def load_embedding_model():
 
 
 def load_llm():
+    """Calls the local ollama server on localhost:11434 and loads the default llama2 LLM"""
     return ChatOllama(
         temperature=0,
         streaming=True,
@@ -39,6 +46,9 @@ def load_llm():
 
 
 def configure_qa_kg_chain(llm, embeddings, neo4jurl="neo4j://localhost:7687", username="neo4j", password="password"):
+    """Creates the database connection to the Neo4j server and sets up the 'glue' between the 
+        Neo4j knowlegde graph and the ollama LLM
+    """
     # Response
     general_system_template = """ 
     Use the following pieces of context to answer question at the end.
