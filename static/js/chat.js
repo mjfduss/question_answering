@@ -29,10 +29,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 responseArea.textContent += data.token;
             }
         };
-        evt.onerror = (e) => {
+        evtSource.onerror = (e) => {
             // Stream will end with an error
             // and we want to close the connection on end (otherwise it will keep reconnecting)
-            evt.close();
+            evtSource.close();
+            loadingDiv.style.display = 'none';
         };
     })
 });

@@ -1,37 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Textbook Question Answering</title>
-  <meta name="description" content="A Knowledge Graph Backed LLM Demonstration for SP24 CSC790">
-  <meta name="author" content="Nathan Hartzler">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
-  <link rel="stylesheet" href="css/normalize.css">
-  <link rel="stylesheet" href="css/skeleton.css">
-  <link rel="icon" type="image/png" href="images/favicon.png">
-</head>
-<body>
-  <div class="container">
-    <div class="row">
-      <div class="one-half column" style="margin-top: 25%">
-        <h4>Student</h4>
-        <form action="javascript:void(0);">
-          <label for="question">Ask a Question</label>
-          <textarea class="u-full-width" placeholder="What is information retrieval?" id="question"></textarea>
-          <input class="button-primary" type="submit" id="submit" value="Submit">
-        </form>
+  <head>
+    <meta charset="utf-8" />
+    <title>Textbook Question Answering</title>
+    <meta
+      name="description"
+      content="A Knowledge Graph Backed LLM Demonstration for SP24 CSC790"
+    />
+    <meta name="author" content="Nathan Hartzler" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      href="//fonts.googleapis.com/css?family=Raleway:400,300,600"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link rel="stylesheet" href="css/normalize.css" />
+    <link rel="stylesheet" href="css/skeleton.css" />
+    <link rel="icon" type="image/png" href="images/favicon.png" />
+    <style>
+      pre {
+        white-space: pre-wrap; /* Since CSS 2.1 */
+        white-space: -moz-pre-wrap; /* Mozilla, since 1999 */
+        white-space: -pre-wrap; /* Opera 4-6 */
+        white-space: -o-pre-wrap; /* Opera 7 */
+        word-wrap: break-word; /* Internet Explorer 5.5+ */
+        height: 500px;
+      }
+      textarea {
+        height: 500px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+        <div class="u-full-width" style="margin-top: 25%">
+          <h1>Textbook Question Answering</h1>
+          <p>A Knowledge Graph Backed LLM Demonstration for SP24 CSC790</p>
+        </div>
       </div>
-      <div class="one-half column" style="margin-top: 25%">
-        <h4>Bot</h4>
-        <div id="loading" style="display:none;">
-          <p>Looking that up for you...</p>
-          <img id="loading-image" src="images/book.gif" alt="Loading..." />
-        </div> 
-        <pre id="response" style="display:none;"></pre>
+      <div class="row">
+        <div class="one-half column" style="margin-top: 10%">
+          <h4>Student</h4>
+          <form action="javascript:void(0);">
+            <label for="question">Ask a Question</label>
+            <textarea
+              class="u-full-width"
+              placeholder="What is information retrieval?"
+              id="question"
+            ></textarea>
+            <input
+              class="button-primary"
+              type="submit"
+              id="submit"
+              value="Submit"
+            />
+          </form>
+        </div>
+        <div class="one-half column" style="margin-top: 10%">
+          <h4>Bot</h4>
+          <div id="loading" style="display: none">
+            <p>Looking that up for you...</p>
+            <img id="loading-image" src="images/book.gif" alt="Loading..." />
+          </div>
+          <pre id="response" style="display: none"></pre>
+        </div>
       </div>
     </div>
-  </div>
-  <script src="js/chat.js"></script>
-</body>
+    <script src="js/chat.js"></script>
+  </body>
 </html>
