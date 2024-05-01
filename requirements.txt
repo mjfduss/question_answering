@@ -12,3 +12,4 @@ langchain
 requests
 beautifulsoup4
 langchain-community
+transformers

@@ -24,7 +24,7 @@ finally
 
 ### Run
 
-`> python uvicorn main:app`
+`> python main.py`
 
 ### Interact
 

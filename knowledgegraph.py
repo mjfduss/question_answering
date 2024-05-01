@@ -13,8 +13,8 @@ def insert_textbook_data(pages: List[dict], embeddings, neo4j_graph: Neo4jGraph)
     print("Building Page Embeddings")
     for page in pages:
         page['embedding'] = embeddings.embed_query(page['text'])
-        #page['child_embedding'] = embeddings.embed_documents([page['title']] + page['children'])
-    
+        # page['child_embedding'] = embeddings.embed_documents([page['title']] + page['children'])
+
     print("Building Knowledge Graph")
     # Cypher, the query language of Neo4j, is used to import the data
     # https://neo4j.com/docs/getting-started/cypher-intro/
@@ -27,7 +27,6 @@ def insert_textbook_data(pages: List[dict], embeddings, neo4j_graph: Neo4jGraph)
     """
     neo4j_graph.query(import_query, {"pages": pages})
 
-    
     subpage_query = """
     UNWIND $pages AS p
     MATCH (page:Page{id:p.id})
@@ -56,7 +55,7 @@ def build_knowledge_graph(neo4j_graph: Neo4jGraph):
 
     # If graph is empty, create knowledge graph
     if not node_count > 0:
-        
+
         print("Loading Embedding Model")
         embeddings, dimension = load_embedding_model()
         create_vector_index(neo4j_graph, dimension)
@@ -70,9 +69,11 @@ def build_knowledge_graph(neo4j_graph: Neo4jGraph):
     # If graph is not empty, do nothing
     return True
 
+
 def setup():
     print("Connecting to Neo4j Graph")
-    neo4j_graph = Neo4jGraph(url="neo4j://localhost:7687", username="neo4j", password="password")
+    neo4j_graph = Neo4jGraph(
+        url="neo4j://localhost:7687", username="neo4j", password="password")
 
     knowledge_graph_built = build_knowledge_graph(neo4j_graph)
     print("knowledge_graph_built:", knowledge_graph_built)

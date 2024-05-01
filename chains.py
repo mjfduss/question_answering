@@ -18,7 +18,7 @@ from utils import BaseLogger
 
 def load_embedding_model():
     embeddings = SentenceTransformerEmbeddings(
-        model_name="all-MiniLM-L6-v2", cache_folder="/embedding_model"
+        model_name="all-MiniLM-L6-v2", cache_folder="embedding_model"
     )
     dimension = 384
     return embeddings, dimension
@@ -90,12 +90,3 @@ def configure_qa_kg_chain(llm, embeddings, neo4jurl="neo4j://localhost:7687", us
         max_tokens_limit=3375,
     )
     return kg_qa
-
-    """
-    CALL { with page
-            MATCH (page)<-[:SUB_PAGE]-(child)
-            WITH child
-            WITH collect(child) as children
-            RETURN reduce(str='', child in children | str + '\n### Subpage:' + child.title + '\n' + child.text + '\n') as childrenText
-        }
-    """
